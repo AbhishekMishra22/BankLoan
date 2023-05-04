@@ -1,0 +1,331 @@
+package com.terralogic.loan.serviceImpl;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.support.PageableExecutionUtils;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+
+import com.terralogic.loan.Exception.CustomerAlreadyExistException;
+import com.terralogic.loan.Exception.CustomerNotFoundException;
+import com.terralogic.loan.kafka.KafkaConsumerService;
+import com.terralogic.loan.kafka.KafkaProducerService;
+import com.terralogic.loan.model.Customer;
+import com.terralogic.loan.repository.CustomerRepository;
+import com.terralogic.loan.service.CustomerService;
+import com.terralogic.loan.service.DbSequenceService;
+
+@Service
+public class CustomerServiceImpl implements CustomerService {
+
+	@Autowired
+	public KafkaProducerService kafkaProducerService;
+
+	@Autowired
+	private DbSequenceService dbSequenceService;
+
+	@Autowired
+	private CustomerRepository customerRepository;
+
+	@Autowired
+	MongoTemplate mongoTemplate;
+
+	private static final Logger logger = LoggerFactory.getLogger(KafkaConsumerService.class);
+
+	@Override
+	public String createAccount(JSONObject jsonCustomer) {
+
+		// TODO Auto-generated method stub
+
+		String customerName = jsonCustomer.getString("adhaarCard");
+
+		if (customerName.equals("adhaarCard")) {
+			throw new CustomerAlreadyExistException("Account already exist");
+		}
+
+		else {
+			long accNo = dbSequenceService.generateDbSequence(Customer.SEQUENCE_NAME);
+			// c.setAccountNo(dbSequenceService.generateDbSequence(Customer.SEQUENCE_NAME));
+
+			jsonCustomer.put("accountNo", accNo);
+			Customer customer = new Customer();
+			customer.setAccountNo(jsonCustomer.getLong("accountNo"));
+			customer.setFirstName(jsonCustomer.getString("firstName"));
+			customer.setLastName(jsonCustomer.getString("lastName"));
+			customer.setEmail(jsonCustomer.getString("email"));
+			customer.setAdhaarCard(jsonCustomer.getString("adhaarCard"));
+			customer.setPanCard(jsonCustomer.getString("panCard"));
+			customerRepository.save(customer);
+			String message = jsonCustomer.toString();
+			System.out.println(message);
+			kafkaProducerService.sendMessage("${spring.kafka.topic.name}", message);
+
+		}
+
+		JSONObject json = new JSONObject();
+		json.put("Status", "Successfull");
+		json.put("accountNo", jsonCustomer.getLong("accountNo"));
+		json.put("Message", "Your Account got created Successfully");
+		String message = json.toString();
+		kafkaProducerService.sendResponse("${spring.kafka.topic1.name}", message);
+		return json.toString();
+		
+//		String customer = jsonCustomer.toString();
+//
+//		ObjectMapper objectMapper = new ObjectMapper();
+//		try {
+//			Customer customer1 = objectMapper.readValue(customer, Customer.class);
+//			customerRepository.save(customer1);
+//		}
+//
+//		catch (JsonMappingException e) {
+//			e.printStackTrace();
+//		} catch (JsonGenerationException e) {
+//			e.printStackTrace();
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+
+		// String message =c.toString();
+	}
+
+	@Override
+	public List<Customer> getAllCustomer() {
+		// TODO Auto-generated method stub
+		return customerRepository.findAll();
+
+	}
+
+	@Override
+	public Customer getCustomerByAccountNo(long accountNo) {
+		Customer customer = customerRepository.findById(accountNo).orElseThrow(
+				() -> new CustomerNotFoundException("Customer not found with account number : " + accountNo));
+
+		return customer;
+
+	}
+
+	@Override
+	public String updateCustomerDetails(long accountNo, Customer c) {
+		// TODO Auto-generated method stub
+
+		Customer customer = customerRepository.findById(accountNo).orElseThrow(
+				() -> new CustomerNotFoundException("Customer not found with account number : " + accountNo));
+
+		customer.setFirstName(c.getFirstName());
+		customer.setLastName(c.getLastName());
+		customer.setEmail(c.getEmail());
+		customer.setPhoneNumber(c.getPhoneNumber());
+		customer.setAdhaarCard(c.getAdhaarCard());
+		customer.setPanCard(c.getPanCard());
+		customerRepository.save(customer);
+
+		JSONObject json = new JSONObject();
+		json.put("accountNo", accountNo);
+
+		json.put("updateStatus", "success");
+
+		return json.toString();
+	}
+
+	@Override
+	public String removeCustomer(long accountNo) {
+
+		// TODO Auto-generated method stub
+		Customer customer = customerRepository.findById(accountNo).orElseThrow(
+				() -> new CustomerNotFoundException("Customer not found with account number : " + accountNo));
+		customerRepository.delete(customer);
+		JSONObject json = new JSONObject();
+		json.put("accountNo", accountNo);
+		json.put("deleteStatus", "Success");
+		return json.toString();
+	}
+
+	@Override
+	public ResponseEntity<Object> searchCustomerByFirstName(String firstName, int pageNo, int pageSize) {
+
+		Pageable paging = PageRequest.of(pageNo, pageSize);
+
+		List<Customer> list = new ArrayList<Customer>();
+
+		Query query = new Query().with(paging);
+
+		query.addCriteria(Criteria.where("firstName").regex("^A"));
+
+		Page<Customer> pageTuts = PageableExecutionUtils.getPage(mongoTemplate.find(query, Customer.class), paging,
+				() -> mongoTemplate.count(query, Customer.class));
+		list = pageTuts.getContent();
+
+		if (list.isEmpty()) {
+			return new ResponseEntity<Object>(HttpStatus.NO_CONTENT);
+		}
+		JSONObject json = new JSONObject();
+		json.put("page", list);
+		json.put("currentPage", pageTuts.getNumber());
+		json.put("totalItems", pageTuts.getTotalElements());
+		json.put("totalPages", pageTuts.getTotalPages());
+
+		return new ResponseEntity<Object>(json, HttpStatus.OK);
+
+	}
+
+	@Override
+	public List<Customer> searchCustomerByLastName(String lastName) {
+
+		customerRepository.getCustomerByLastName(lastName)
+				.orElseThrow(() -> new CustomerNotFoundException("Customer Not found with last name " + lastName));
+		return customerRepository.searchCustomerByLastName(lastName);
+	}
+
+	@Override
+	public Customer searchCustomerByPhoneNumber(String phoneNumber) {
+		customerRepository.getCustomerByPhoneNumber(phoneNumber).orElseThrow(
+				() -> new CustomerNotFoundException("Customer Not found with phone number " + phoneNumber));
+		return customerRepository.searchCustomerByPhoneNumber(phoneNumber);
+
+	}
+
+	@Override
+	public Customer searchCustomerByMail(String email) {
+		customerRepository.getCustomerByMail(email)
+				.orElseThrow(() -> new CustomerNotFoundException("Customer Not found with mail " + email));
+		return customerRepository.searchCustomerByMail(email);
+
+	}
+
+	@Override
+	public Customer searchCustomerByAadharCard(String adhaarCard) {
+
+		customerRepository.getCustomerByAdhaarCard(adhaarCard)
+				.orElseThrow(() -> new CustomerNotFoundException("Customer Not found with Aadhar Card " + adhaarCard));
+		return customerRepository.searchCustomerByAadharCard(adhaarCard);
+
+	}
+
+	@Override
+	public Customer searchCustomerByPanCard(String panCard) {
+		customerRepository.getCustomerByPanCard(panCard)
+				.orElseThrow(() -> new CustomerNotFoundException("Customer Not found with Pan Card " + panCard));
+		return customerRepository.searchCustomerByPanCard(panCard);
+
+	}
+
+	@Override
+	public ResponseEntity<Object> findAll(int paze, int size) {
+		// TODO Auto-generated method stub
+
+		List<Customer> customer = new ArrayList<Customer>();
+		Pageable paging = PageRequest.of(paze, size);
+
+		Page<Customer> pageTuts = customerRepository.findAll(paging);
+		customer = pageTuts.getContent();
+		if (customer.isEmpty()) {
+			return new ResponseEntity<Object>(HttpStatus.NO_CONTENT);
+		}
+		JSONObject json = new JSONObject();
+		json.put("page", customer);
+		json.put("currentPage", pageTuts.getNumber());
+		json.put("totalItems", pageTuts.getTotalElements());
+		json.put("totalPages", pageTuts.getTotalPages());
+
+		return new ResponseEntity<Object>(json.toString(), HttpStatus.OK);
+	}
+
+	@Override
+	public ResponseEntity<Object> findByFirstName(int paze, int size, String firstName) {
+		// TODO Auto-generated method stub
+		List<Customer> list = new ArrayList<Customer>();
+		Pageable paging = PageRequest.of(paze, size);
+		Page<Customer> pageTuts = customerRepository.findByFirstNameContainingIgnoreCase(firstName, paging);
+		list = pageTuts.getContent();
+		if (list.isEmpty()) {
+			return new ResponseEntity<Object>(HttpStatus.NO_CONTENT);
+		}
+		JSONObject json = new JSONObject();
+		json.put("page", list);
+		json.put("currentPage", pageTuts.getNumber());
+		json.put("totalItems", pageTuts.getTotalElements());
+		json.put("totalPages", pageTuts.getTotalPages());
+
+		return new ResponseEntity<Object>(json, HttpStatus.OK);
+	}
+
+	@Override
+	public Page<Customer> fetchCustomerByproperties(String firstName, String lastName, String email, String phoneNumber,
+			String adhaarCard, String panCard, int page, int size) {
+		// TODO Auto-generated method stub
+		Pageable paging = PageRequest.of(page, size);
+		Query query = new Query().with(paging);
+		final List<Criteria> criteria = new ArrayList<>();
+		if (firstName != null && !firstName.isEmpty())
+			criteria.add(Criteria.where("firstName").is(firstName));
+		if (lastName != null && !lastName.isEmpty())
+			criteria.add(Criteria.where("lastName").is(lastName));
+		if (email != null && !email.isEmpty())
+			criteria.add(Criteria.where("email").is(email));
+		if (phoneNumber != null && !phoneNumber.isEmpty())
+			criteria.add(Criteria.where("phoneNumber").is(phoneNumber));
+		if (adhaarCard != null && !adhaarCard.isEmpty())
+			criteria.add(Criteria.where("adhaarCard").is(adhaarCard));
+		if (panCard != null && !panCard.isEmpty())
+			criteria.add(Criteria.where("panCard").is(panCard));
+		if (!criteria.isEmpty()) {
+			query.addCriteria(new Criteria().andOperator(criteria.toArray(new Criteria[criteria.size()])));
+		}
+		return PageableExecutionUtils.getPage(mongoTemplate.find(query, Customer.class), paging,
+				() -> mongoTemplate.count(query, Customer.class));
+
+	}
+
+	@Override
+	public ResponseEntity<Object> getAccountByitsEntry(int page, int size, int limit) {
+		// TODO Auto-generated method stub
+
+		Pageable paging = PageRequest.of(page, size);
+		List<Customer> list = new ArrayList<>();
+		Page<Customer> pageTuts = customerRepository.getCustomerByAccountNo(limit, paging);
+		list = pageTuts.getContent();
+
+		logger.info(String.format("Message received -> %s", list.toString()));
+
+		if (list.isEmpty()) {
+			return new ResponseEntity<Object>(HttpStatus.NO_CONTENT);
+		}
+		JSONObject json = new JSONObject();
+		json.put("page", list);
+		json.put("currentPage", pageTuts.getNumber());
+		json.put("totalItems", pageTuts.getTotalElements());
+		json.put("totalPages", pageTuts.getTotalPages());
+
+		return new ResponseEntity<Object>(json.toString(), HttpStatus.OK);
+	}
+
+	@Override
+	public List<Customer> getRequiredDetails() {
+		// TODO Auto-generated method stub
+		List<Customer> list =customerRepository.getAllRequiredData();
+		return list;
+	}
+
+	// @Override
+//	public Map<String, Object> getAllByPageNo(int pageNO, int pageSize, String[] fields, String sortBy) {
+//		// TODO Auto-generated method stub
+//		Map<String, Object> response = new HashMap<>();
+//
+//		// Customer customer = customerRepository.findAll().
+//		return null;
+//	}
+
+}
