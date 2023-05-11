@@ -1,5 +1,6 @@
 package com.terralogic.loan.serviceImpl;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,13 +50,22 @@ public class CustomerServiceImpl implements CustomerService {
 
 		// TODO Auto-generated method stub
 
-		String customerName = jsonCustomer.getString("adhaarCard");
+//       String test= jsonCustomer.getString("adhaarCard");
+//	  if(customerRepository.checkCustomerByAdhaarCard(test).equals(true))
+//	  {
+//		  throw new CustomerAlreadyExistException("Customer already exist with this adhar card ");
+//	  }
 
-		if (customerName.equals("adhaarCard")) {
-			throw new CustomerAlreadyExistException("Account already exist");
+		Query query = new Query();
+		query.addCriteria(Criteria.where("adhaarCard").is(jsonCustomer.get("adhaarCard")));
+		List<Customer> users = mongoTemplate.find(query, Customer.class);
+
+		if (!users.isEmpty()) {
+			throw new CustomerAlreadyExistException("Account already exist with this aadhar card");
 		}
 
 		else {
+
 			long accNo = dbSequenceService.generateDbSequence(Customer.SEQUENCE_NAME);
 			// c.setAccountNo(dbSequenceService.generateDbSequence(Customer.SEQUENCE_NAME));
 
@@ -65,11 +75,13 @@ public class CustomerServiceImpl implements CustomerService {
 			customer.setFirstName(jsonCustomer.getString("firstName"));
 			customer.setLastName(jsonCustomer.getString("lastName"));
 			customer.setEmail(jsonCustomer.getString("email"));
+			customer.setPhoneNumber(jsonCustomer.getString("phoneNumber"));
 			customer.setAdhaarCard(jsonCustomer.getString("adhaarCard"));
 			customer.setPanCard(jsonCustomer.getString("panCard"));
+			customer.setCreatedDate(LocalDate.now());
 			customerRepository.save(customer);
 			String message = jsonCustomer.toString();
-			System.out.println(message);
+			// System.out.println(message);
 			kafkaProducerService.sendMessage("${spring.kafka.topic.name}", message);
 
 		}
@@ -78,11 +90,12 @@ public class CustomerServiceImpl implements CustomerService {
 		json.put("Status", "Successfull");
 		json.put("accountNo", jsonCustomer.getLong("accountNo"));
 		json.put("Message", "Your Account got created Successfully");
-		String message = json.toString();
-		kafkaProducerService.sendResponse("${spring.kafka.topic1.name}", message);
+		String messages = json.toString();
+		kafkaProducerService.sendResponse("${spring.kafka.topic1.name}", messages);
 		return json.toString();
-		
+
 //		String customer = jsonCustomer.toString();
+
 //
 //		ObjectMapper objectMapper = new ObjectMapper();
 //		try {
@@ -315,17 +328,35 @@ public class CustomerServiceImpl implements CustomerService {
 	@Override
 	public List<Customer> getRequiredDetails() {
 		// TODO Auto-generated method stub
-		List<Customer> list =customerRepository.getAllRequiredData();
+		List<Customer> list = customerRepository.getAllRequiredData();
+		System.out.println(list);
 		return list;
+
 	}
 
-	// @Override
-//	public Map<String, Object> getAllByPageNo(int pageNO, int pageSize, String[] fields, String sortBy) {
+//	@Override
+//	public ResponseEntity<Object> getCustomerBetweenDate(int page, int size, String from, String to) {
 //		// TODO Auto-generated method stub
-//		Map<String, Object> response = new HashMap<>();
+//		
+//		Pageable paging = PageRequest.of(page, size);
+//		List<Customer> list = new  ArrayList<Customer>();
+//		 
+//		Page<Customer> pageTuts = customerRepository.getCustomerBetweenFewDates(froms, tos, paging);
+//		list= pageTuts.getContent();
+//		
+//		if(list.isEmpty())
+//		{
+//			return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+//		}
+//		
+//		
+//		JSONObject json = new JSONObject();
+//		json.put("page", list);
+//		json.put("currentPage", pageTuts.getNumber());
+//		json.put("totalItems", pageTuts.getTotalElements());
+//		json.put("totalPages", pageTuts.getTotalPages());
 //
-//		// Customer customer = customerRepository.findAll().
-//		return null;
+//		return new ResponseEntity<Object>(json.toString(), HttpStatus.OK);
 //	}
 
 }

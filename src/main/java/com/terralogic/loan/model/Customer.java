@@ -1,8 +1,12 @@
 package com.terralogic.loan.model;
 
+import java.time.LocalDate;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.format.annotation.DateTimeFormat.ISO;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -33,6 +37,33 @@ public class Customer {
 	@NotEmpty(message = "please enter your panCard number")
 	@NotNull(message = "panCard Number can't be null")
 	private String panCard;
+
+	@DateTimeFormat(iso = ISO.DATE)
+	private LocalDate createdDate;
+
+	public Customer(long accountNo,
+			@NotEmpty(message = "firstName can't be empty") @NotNull(message = "lastName Can't be null") String firstName,
+			@NotEmpty(message = "lastName can't be empty") @NotNull(message = "lastName can't be null") String lastName,
+			@NotEmpty(message = "phoneNumber can't be Empty") @NotNull(message = "phoneNumber can't be null") String phoneNumber,
+			@NotEmpty(message = "email can't be empty") @NotNull(message = "email can't be null") String email,
+			@NotEmpty(message = "please enter your adhaarCardNumber") @NotNull(message = "adhaarCard Number can't be null") String adhaarCard,
+			@NotEmpty(message = "please enter your panCard number") @NotNull(message = "panCard Number can't be null") String panCard,
+			LocalDate createdDate) {
+		super();
+		this.accountNo = accountNo;
+		this.firstName = firstName;
+		this.lastName = lastName;
+		this.phoneNumber = phoneNumber;
+		this.email = email;
+		this.adhaarCard = adhaarCard;
+		this.panCard = panCard;
+		this.createdDate = createdDate;
+	}
+
+	public Customer() {
+		super();
+		// TODO Auto-generated constructor stub
+	}
 
 	public long getAccountNo() {
 		return accountNo;
@@ -90,37 +121,25 @@ public class Customer {
 		this.panCard = panCard;
 	}
 
+	public LocalDate getCreatedDate() {
+		return createdDate;
+	}
+
+	public void setCreatedDate(LocalDate createdDate) {
+		this.createdDate = createdDate;
+	}
+
 	public static String getSequenceName() {
 		return SEQUENCE_NAME;
-	}
-
-	public Customer(long accountNo,
-			@NotEmpty(message = "firstName can't be empty") @NotNull(message = "lastName Can't be null") String firstName,
-			@NotEmpty(message = "lastName can't be empty") @NotNull(message = "lastName can't be null") String lastName,
-			@NotEmpty(message = "phoneNumber can't be Empty") @NotNull(message = "phoneNumber can't be null") String phoneNumber,
-			@NotEmpty(message = "email can't be empty") @NotNull(message = "email can't be null") String email,
-			@NotEmpty(message = "please enter your adhaarCardNumber") @NotNull(message = "adhaarCard Number can't be null") String adhaarCard,
-			@NotEmpty(message = "please enter your panCard number") @NotNull(message = "panCard Number can't be null") String panCard) {
-		super();
-		this.accountNo = accountNo;
-		this.firstName = firstName;
-		this.lastName = lastName;
-		this.phoneNumber = phoneNumber;
-		this.email = email;
-		this.adhaarCard = adhaarCard;
-		this.panCard = panCard;
-	}
-
-	public Customer() {
-		super();
-		// TODO Auto-generated constructor stub
 	}
 
 	@Override
 	public String toString() {
 		return "Customer [accountNo=" + accountNo + ", firstName=" + firstName + ", lastName=" + lastName
 				+ ", phoneNumber=" + phoneNumber + ", email=" + email + ", adhaarCard=" + adhaarCard + ", panCard="
-				+ panCard + "]";
+				+ panCard + ", createdDate=" + createdDate + "]";
 	}
+
+
 
 }

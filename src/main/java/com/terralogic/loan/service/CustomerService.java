@@ -42,5 +42,7 @@ public interface CustomerService {
 	public ResponseEntity<Object> getAccountByitsEntry(int page, int size, int limit);
 	
 	public List<Customer> getRequiredDetails();
+	
+	//public ResponseEntity<Object> getCustomerBetweenDate( int page ,int size, String from ,String to );
 
 }
