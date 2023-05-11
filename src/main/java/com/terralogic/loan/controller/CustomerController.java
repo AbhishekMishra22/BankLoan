@@ -1,5 +1,6 @@
 package com.terralogic.loan.controller;
 
+import java.util.Date;
 import java.util.List;
 
 import org.json.JSONObject;
@@ -128,10 +129,16 @@ public class CustomerController {
 		return new ResponseEntity<Object>(customerService.getAccountByitsEntry(page, size, limit), HttpStatus.OK);
 
 	}
-	
+
 	@GetMapping("/customer/requiredDetails")
-	public List<Customer>getRequiredDetails()
-	{
+	public List<Customer> getRequiredDetails() {
 		return customerService.getRequiredDetails();
 	}
+
+//	@GetMapping("/customer/dateFilter")
+//	private ResponseEntity<Object> getCustomerBetweenDate(@RequestParam Date from, @RequestParam Date to,
+//			@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "0") int size) {
+//		return customerService.getCustomerBetweenDate(page, size, from, to);
+//	}
+
 }
