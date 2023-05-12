@@ -40,9 +40,9 @@ public interface CustomerService {
 			String adhaarCard, String panCard, int page, int size);
 
 	public ResponseEntity<Object> getAccountByitsEntry(int page, int size, int limit);
-	
+
 	public List<Customer> getRequiredDetails();
-	
-	//public ResponseEntity<Object> getCustomerBetweenDate( int page ,int size, String from ,String to );
+
+	public Page<Customer> getCustomerBetweenDate(int page, int size, String from, String to);
 
 }

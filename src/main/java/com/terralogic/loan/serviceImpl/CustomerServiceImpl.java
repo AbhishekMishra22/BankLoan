@@ -1,7 +1,9 @@
 package com.terralogic.loan.serviceImpl;
 
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import org.json.JSONObject;
@@ -48,14 +50,6 @@ public class CustomerServiceImpl implements CustomerService {
 	@Override
 	public String createAccount(JSONObject jsonCustomer) {
 
-		// TODO Auto-generated method stub
-
-//       String test= jsonCustomer.getString("adhaarCard");
-//	  if(customerRepository.checkCustomerByAdhaarCard(test).equals(true))
-//	  {
-//		  throw new CustomerAlreadyExistException("Customer already exist with this adhar card ");
-//	  }
-
 		Query query = new Query();
 		query.addCriteria(Criteria.where("adhaarCard").is(jsonCustomer.get("adhaarCard")));
 		List<Customer> users = mongoTemplate.find(query, Customer.class);
@@ -67,10 +61,10 @@ public class CustomerServiceImpl implements CustomerService {
 		else {
 
 			long accNo = dbSequenceService.generateDbSequence(Customer.SEQUENCE_NAME);
-			// c.setAccountNo(dbSequenceService.generateDbSequence(Customer.SEQUENCE_NAME));
-
 			jsonCustomer.put("accountNo", accNo);
+
 			Customer customer = new Customer();
+
 			customer.setAccountNo(jsonCustomer.getLong("accountNo"));
 			customer.setFirstName(jsonCustomer.getString("firstName"));
 			customer.setLastName(jsonCustomer.getString("lastName"));
@@ -81,7 +75,6 @@ public class CustomerServiceImpl implements CustomerService {
 			customer.setCreatedDate(LocalDate.now());
 			customerRepository.save(customer);
 			String message = jsonCustomer.toString();
-			// System.out.println(message);
 			kafkaProducerService.sendMessage("${spring.kafka.topic.name}", message);
 
 		}
@@ -94,24 +87,6 @@ public class CustomerServiceImpl implements CustomerService {
 		kafkaProducerService.sendResponse("${spring.kafka.topic1.name}", messages);
 		return json.toString();
 
-//		String customer = jsonCustomer.toString();
-
-//
-//		ObjectMapper objectMapper = new ObjectMapper();
-//		try {
-//			Customer customer1 = objectMapper.readValue(customer, Customer.class);
-//			customerRepository.save(customer1);
-//		}
-//
-//		catch (JsonMappingException e) {
-//			e.printStackTrace();
-//		} catch (JsonGenerationException e) {
-//			e.printStackTrace();
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
-
-		// String message =c.toString();
 	}
 
 	@Override
@@ -132,7 +107,6 @@ public class CustomerServiceImpl implements CustomerService {
 
 	@Override
 	public String updateCustomerDetails(long accountNo, Customer c) {
-		// TODO Auto-generated method stub
 
 		Customer customer = customerRepository.findById(accountNo).orElseThrow(
 				() -> new CustomerNotFoundException("Customer not found with account number : " + accountNo));
@@ -156,7 +130,6 @@ public class CustomerServiceImpl implements CustomerService {
 	@Override
 	public String removeCustomer(long accountNo) {
 
-		// TODO Auto-generated method stub
 		Customer customer = customerRepository.findById(accountNo).orElseThrow(
 				() -> new CustomerNotFoundException("Customer not found with account number : " + accountNo));
 		customerRepository.delete(customer);
@@ -171,14 +144,13 @@ public class CustomerServiceImpl implements CustomerService {
 
 		Pageable paging = PageRequest.of(pageNo, pageSize);
 
-		List<Customer> list = new ArrayList<Customer>();
-
 		Query query = new Query().with(paging);
-
 		query.addCriteria(Criteria.where("firstName").regex("^A"));
 
 		Page<Customer> pageTuts = PageableExecutionUtils.getPage(mongoTemplate.find(query, Customer.class), paging,
 				() -> mongoTemplate.count(query, Customer.class));
+
+		List<Customer> list = new ArrayList<Customer>();
 		list = pageTuts.getContent();
 
 		if (list.isEmpty()) {
@@ -237,7 +209,6 @@ public class CustomerServiceImpl implements CustomerService {
 
 	@Override
 	public ResponseEntity<Object> findAll(int paze, int size) {
-		// TODO Auto-generated method stub
 
 		List<Customer> customer = new ArrayList<Customer>();
 		Pageable paging = PageRequest.of(paze, size);
@@ -258,7 +229,7 @@ public class CustomerServiceImpl implements CustomerService {
 
 	@Override
 	public ResponseEntity<Object> findByFirstName(int paze, int size, String firstName) {
-		// TODO Auto-generated method stub
+
 		List<Customer> list = new ArrayList<Customer>();
 		Pageable paging = PageRequest.of(paze, size);
 		Page<Customer> pageTuts = customerRepository.findByFirstNameContainingIgnoreCase(firstName, paging);
@@ -278,7 +249,7 @@ public class CustomerServiceImpl implements CustomerService {
 	@Override
 	public Page<Customer> fetchCustomerByproperties(String firstName, String lastName, String email, String phoneNumber,
 			String adhaarCard, String panCard, int page, int size) {
-		// TODO Auto-generated method stub
+
 		Pageable paging = PageRequest.of(page, size);
 		Query query = new Query().with(paging);
 		final List<Criteria> criteria = new ArrayList<>();
@@ -304,11 +275,10 @@ public class CustomerServiceImpl implements CustomerService {
 
 	@Override
 	public ResponseEntity<Object> getAccountByitsEntry(int page, int size, int limit) {
-		// TODO Auto-generated method stub
 
 		Pageable paging = PageRequest.of(page, size);
-		List<Customer> list = new ArrayList<>();
 		Page<Customer> pageTuts = customerRepository.getCustomerByAccountNo(limit, paging);
+		List<Customer> list = new ArrayList<>();
 		list = pageTuts.getContent();
 
 		logger.info(String.format("Message received -> %s", list.toString()));
@@ -327,36 +297,48 @@ public class CustomerServiceImpl implements CustomerService {
 
 	@Override
 	public List<Customer> getRequiredDetails() {
-		// TODO Auto-generated method stub
+
 		List<Customer> list = customerRepository.getAllRequiredData();
 		System.out.println(list);
 		return list;
 
 	}
 
-//	@Override
-//	public ResponseEntity<Object> getCustomerBetweenDate(int page, int size, String from, String to) {
-//		// TODO Auto-generated method stub
-//		
-//		Pageable paging = PageRequest.of(page, size);
-//		List<Customer> list = new  ArrayList<Customer>();
-//		 
-//		Page<Customer> pageTuts = customerRepository.getCustomerBetweenFewDates(froms, tos, paging);
-//		list= pageTuts.getContent();
-//		
-//		if(list.isEmpty())
-//		{
-//			return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-//		}
-//		
-//		
-//		JSONObject json = new JSONObject();
-//		json.put("page", list);
-//		json.put("currentPage", pageTuts.getNumber());
-//		json.put("totalItems", pageTuts.getTotalElements());
-//		json.put("totalPages", pageTuts.getTotalPages());
-//
-//		return new ResponseEntity<Object>(json.toString(), HttpStatus.OK);
-//	}
+	@Override
+	public Page<Customer> getCustomerBetweenDate(int page, int size, String from, String to) {
 
+		SimpleDateFormat formatter1 = new SimpleDateFormat("yyyy-MM-dd");
+		Date froms = null;
+
+		try {
+			froms = formatter1.parse(from);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		Date tos = null;
+
+		try {
+			tos = formatter1.parse(from);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		if (froms != null && tos != null) {
+
+			Pageable paging = PageRequest.of(page, size);
+			Query query = new Query().with(paging);
+			final List<Criteria> criteria = new ArrayList<>();
+			criteria.add(Criteria.where("createdDate").gte(froms).lte(to));
+
+			return PageableExecutionUtils.getPage(mongoTemplate.find(query, Customer.class), paging,
+					() -> mongoTemplate.count(query, Customer.class));
+
+		}
+
+		else
+			return null;
+
+	}
 }
