@@ -296,11 +296,13 @@ public class CustomerServiceImpl implements CustomerService {
 	}
 
 	@Override
-	public List<Customer> getRequiredDetails() {
+	public Page<Customer> getRequiredDetails(int page, int size) {
 
-		List<Customer> list = customerRepository.getAllRequiredData();
-		System.out.println(list);
-		return list;
+		Pageable paging = PageRequest.of(page, size);
+		Query query = new Query().with(paging);
+		query.fields().exclude("adhaarCard", "panCard");
+		return PageableExecutionUtils.getPage(mongoTemplate.find(query, Customer.class), paging,
+				() -> mongoTemplate.count(query, Customer.class));
 
 	}
 

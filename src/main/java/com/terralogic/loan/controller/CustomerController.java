@@ -130,8 +130,8 @@ public class CustomerController {
 	}
 
 	@GetMapping("/customer/requiredDetails")
-	public List<Customer> getRequiredDetails() {
-		return customerService.getRequiredDetails();
+	public Page<Customer> getRequiredDetails(@RequestParam int page, @RequestParam int size) {
+		return customerService.getRequiredDetails(page, size);
 	}
 
 	@GetMapping("/customer/dateFilter")
