@@ -1,6 +1,5 @@
 package com.terralogic.loan.controller;
 
-import java.util.Date;
 import java.util.List;
 
 import org.json.JSONObject;
@@ -135,10 +134,10 @@ public class CustomerController {
 		return customerService.getRequiredDetails();
 	}
 
-//	@GetMapping("/customer/dateFilter")
-//	private ResponseEntity<Object> getCustomerBetweenDate(@RequestParam Date from, @RequestParam Date to,
-//			@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "0") int size) {
-//		return customerService.getCustomerBetweenDate(page, size, from, to);
-//	}
+	@GetMapping("/customer/dateFilter")
+	private Page<Customer> getCustomerBetweenDate(@RequestParam String from, @RequestParam String to,
+			@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "0") int size) {
+		return customerService.getCustomerBetweenDate(page, size, from, to);
+	}
 
 }

@@ -17,9 +17,6 @@ public interface CustomerRepository extends MongoRepository<Customer, Long> {
 
 	@Query("{adhaarCard:?0}")
 	public Optional<Customer> getCustomerByAdhaarCard(String adhaarCard);
-	
-	@Query("{adhaarCard:?0}")
-	public Boolean checkCustomerByAdhaarCard(String adhaarCard);
 
 	@Query("{firstName:?0}")
 	public Optional<Customer> getCustomerByFirstName(String firstName);
@@ -60,11 +57,11 @@ public interface CustomerRepository extends MongoRepository<Customer, Long> {
 
 	@Query("{accountNo:{$lte : ?0}}")
 	public Page<Customer> getCustomerByAccountNo(int limit, Pageable page);
-	
-	@Query(value = "{}",fields = "{firstName : 1,lastName : 1,phoneNumber: 1, email: 1}")
-	public List<Customer>getAllRequiredData()	;
-	
-	@Query("{createdDate:{$gte?0,$lte?1}}")
-	public  Page<Customer>getCustomerBetweenFewDates(Date from, Date to, Pageable page);
+
+	@Query(value = "{}", fields = "{firstName : 1,lastName : 1,phoneNumber: 1, email: 1}")
+	public List<Customer> getAllRequiredData();
+
+	@Query("{$and:[{createdDate:{$gte:0}},{createdDate:{$lte:1}}]}")
+	public List<Customer> getCustomerBetweenFewDates(Date from, Date to);
 
 }

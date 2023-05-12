@@ -5,8 +5,8 @@ import java.time.LocalDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.format.annotation.DateTimeFormat.ISO;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -38,7 +38,7 @@ public class Customer {
 	@NotNull(message = "panCard Number can't be null")
 	private String panCard;
 
-	@DateTimeFormat(iso = ISO.DATE)
+	@JsonFormat(pattern = "yyyy-MM-dd")
 	private LocalDate createdDate;
 
 	public Customer(long accountNo,
@@ -139,7 +139,5 @@ public class Customer {
 				+ ", phoneNumber=" + phoneNumber + ", email=" + email + ", adhaarCard=" + adhaarCard + ", panCard="
 				+ panCard + ", createdDate=" + createdDate + "]";
 	}
-
-
 
 }
